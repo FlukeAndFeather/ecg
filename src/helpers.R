@@ -56,17 +56,75 @@ plot_profile <- function(data, box) {
 # Input: plot data
 # Output: plot
 #output$detail_plot <- renderPlot({ plot_detail(values$ecg_detail) })
-plot_detail <- function(data) {
+plot_detail <- function(data, beats, gaps, click, brush, mode) {
   # If no data yet, return a blank plot
   if (is.null(data))
-    return(list(NULL, ggplot(NULL)))
+    return(list(NULL, beats, gaps))
   
   # Maximum 10,000 points
   data_sparse <- data %>%
     slice(seq(1, nrow(data), length.out = 1e4))
   
-  ggplot(data_sparse, aes(timestamp, ecg)) +
-    geom_line(size = 0.5) +
+  # Which heart beats and ECG gaps are visible?
+  if (is.null(beats)) {
+    beats <- filter(data, FALSE)
+  }
+  if (is.null(gaps)) {
+    gaps <- tibble(timestamp_begin = now("UTC"),
+                   timestamp_end = now("UTC")) %>% 
+      filter(FALSE)
+  }
+  beats_visible <- filter(beats, 
+                          between(timestamp, 
+                                  min(data$timestamp), 
+                                  max(data$timestamp)))
+  gaps_visible <- filter(gaps,
+                         timestamp_end > min(data$timestamp),
+                         timestamp_begin < max(data$timestamp)) %>% 
+    mutate(gap_xmin = pmax(min(data$timestamp), timestamp_begin),
+           gap_xmax = pmin(max(data$timestamp), timestamp_end),
+           gap_ymin = min(data$ecg),
+           gap_ymax = max(data$ecg))
+  # Add/remove beats/gaps
+  if (!is.null(click)) {
+    if (mode == 1) {
+      nearest_ecg <- which.min(abs(click$x - as.numeric(data$timestamp)))
+      search_range <- filter(data, 
+                             timestamp > data$timestamp[nearest_ecg] - 0.5,
+                             timestamp < data$timestamp[nearest_ecg] + 0.5)
+      nearest_peak <- filter(search_range, ecg == max(ecg)) %>% slice(1)
+      if (!nearest_peak$timestamp %in% beats$timestamp)
+        beats <- rbind(beats, nearest_peak)
+    } else {
+      if (nrow(beats_visible) > 0) {
+        nearest_beat <- which.min(abs(click$x - as.numeric(beats_visible$timestamp)))
+        if (abs(click$x - beats_visible$timestamp[nearest_beat]) < 50) {
+          beats <- slice(beats, -nearest_beat)
+        }
+      }
+    }
+  } else if (!is.null(brush)) {
+    gaps <- rbind(gaps,
+                  tibble(timestamp_begin = brush$xmin,
+                         timestamp_end = brush$xmax))
+  }
+  
+  # Create plot
+  p <- ggplot(data_sparse, aes(timestamp, ecg)) +
+    geom_line(size = 0.1) +
+    geom_point(data = beats_visible,
+               shape = 3,
+               color = "red") +
+    geom_rect(aes(xmin = gap_xmin,
+                  xmax = gap_xmax,
+                  ymin = gap_ymin,
+                  ymax = gap_ymax),
+              gaps_visible,
+              inherit.aes = FALSE,
+              color = "blue",
+              alpha = 0.2) +
+    labs(title = nrow(beats)) +
     theme_classic() +
     theme(axis.title = element_blank())
+  list(p, beats, gaps)
 }
