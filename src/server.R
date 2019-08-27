@@ -5,8 +5,7 @@ source("helpers.R")
 shinyServer(function(input, output) {
   values <- reactiveValues(ecg_data = read_ubc("../data/max_ecg_190826b.ubc"),
                            heart_beats = NULL,
-                           ecg_gaps = NULL,
-                           mode = 1)
+                           ecg_gaps = NULL)
   
   output$data_plot <- renderPlot({ 
     c(deploy_data, data_plot) %<-% plot_profile(values$ecg_data, 
@@ -26,7 +25,7 @@ shinyServer(function(input, output) {
                                        isolate(values$ecg_gaps),
                                        input$detail_click,
                                        input$detail_brush,
-                                       isolate(values$mode))
+                                       isolate(input$mode))
     values$heart_beats <- beats
     values$ecg_gaps <- gaps
     p

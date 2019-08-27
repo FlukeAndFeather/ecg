@@ -85,6 +85,7 @@ plot_detail <- function(data, beats, gaps, click, brush, mode) {
            gap_xmax = pmin(max(data$timestamp), timestamp_end),
            gap_ymin = min(data$ecg),
            gap_ymax = max(data$ecg))
+  
   # Add/remove beats/gaps
   if (!is.null(click)) {
     if (mode == 1) {
@@ -95,10 +96,10 @@ plot_detail <- function(data, beats, gaps, click, brush, mode) {
       nearest_peak <- filter(search_range, ecg == max(ecg)) %>% slice(1)
       if (!nearest_peak$timestamp %in% beats$timestamp)
         beats <- rbind(beats, nearest_peak)
-    } else {
+    } else if (mode == 2) {
       if (nrow(beats_visible) > 0) {
         nearest_beat <- which.min(abs(click$x - as.numeric(beats_visible$timestamp)))
-        if (abs(click$x - beats_visible$timestamp[nearest_beat]) < 50) {
+        if (abs(click$x - as.numeric(beats_visible$timestamp[nearest_beat])) < 0.5) {
           beats <- slice(beats, -nearest_beat)
         }
       }
@@ -123,7 +124,7 @@ plot_detail <- function(data, beats, gaps, click, brush, mode) {
               inherit.aes = FALSE,
               color = "blue",
               alpha = 0.2) +
-    labs(title = nrow(beats)) +
+    labs(title = sprintf("beats:%d;mode:%s", nrow(beats), mode)) +
     theme_classic() +
     theme(axis.title = element_blank())
   list(p, beats, gaps)
