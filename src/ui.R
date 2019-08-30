@@ -5,6 +5,9 @@
 library(shiny)
 library(plotly)
 
+# 100MB limit
+options(shiny.maxRequestSize = 100*1024^2)
+
 fillPage(
   tags$script('
     $(document).on("keypress", function (e) {
@@ -12,16 +15,22 @@ fillPage(
               });
               '),
   sidebarLayout(
-    sidebarPanel(textInput("deploy_start",
+    sidebarPanel(fileInput("ube_file",
+                           "UBE File",
+                           accept = "*.ube"),
+                 textInput("deploy_start",
                            "Deployment start:"),
                  textInput("deploy_end",
                            "Deployment end:"),
                  radioButtons("mode",
                               "Interaction mode",
-                              list(`Add heart beat` = 1,
-                                   `Clear heart beat` = 2,
-                                   `Clear gap` = 3))),
-    
+                              list(`Deploy start` = 1,
+                                   `Deploy end` = 2,
+                                   `Add heart beat` = 3,
+                                   `Clear heart beat` = 4,
+                                   `Clear gap` = 5)),
+                 downloadButton("output_all", "Download all data (.RData)"),
+                 downloadButton("output_csv", "Download heart beats (.csv)")),
     mainPanel(
       plotOutput("data_plot",
                  brush = "data_brush",
