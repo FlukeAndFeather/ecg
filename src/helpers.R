@@ -173,7 +173,9 @@ plot_detail <- function(data, beats, gaps, limits, click, brush, mode) {
         }
       }
     } else if (mode == clear_gap) {
-      
+      gap <- which(click$x > gaps$timestamp_begin & click$x < gaps$timestamp_end)
+      if (length(gap) == 1)
+        gaps <- slice(gaps, -gap)
     }
   } else if (!is.null(brush)) {
     if (mode == add_gap) {
