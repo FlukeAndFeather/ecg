@@ -48,14 +48,24 @@ shinyServer(function(input, output, session) {
     values$ecg_limits <- limits
     p
   })
-  output$output_all <- downloadHandler(
+  output$save_prog <- downloadHandler(
     filename = function() {
       format(now(), "ecg_%y%m%d%H%M%S.RData")
     },
     content = function(file) {
-      save(list = prepare_rdata(values$ecg_deploy,
-                                values$heart_beats,
-                                values$ecg_gaps),
-           file = file)
+      saveRDS(prepare_rds(values$ecg_data,
+                          values$heart_beats,
+                          values$ecg_gaps,
+                          values$ecg_limits),
+              file)
+    })
+  output$output_csv <- downloadHandler(
+    filename = function() {
+      format(now(), "ecg_%y%m%d%H%M%S.csv")
+    },
+    content = function(file) {
+      write_csv(prepare_csv(values$heart_beats,
+                            values$ecg_gaps),
+                file)
     })
 })

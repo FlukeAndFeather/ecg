@@ -30,7 +30,7 @@ fillPage(
                                    `Clear heart beat` = 4,
                                    `Add gap` = 5,
                                    `Clear gap` = 6)),
-                 downloadButton("output_all", "Download all data (.RData)"),
+                 downloadButton("save_prog", "Save progress (.rds)"),
                  downloadButton("output_csv", "Download heart beats (.csv)")),
     mainPanel(
       plotOutput("data_plot",

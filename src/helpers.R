@@ -234,15 +234,26 @@ plot_detail <- function(data, beats, gaps, limits, click, brush, mode) {
 # Input: beats, gaps
 # Output: data frame
 prepare_beats <- function(beats, gaps) {
-  
+  result <- beats %>% 
+    mutate(period_s = as.numeric(lead(timestamp) - timestamp, 
+                                 unit = "secs"), 
+           freq_hz = 1 / period_s, 
+           freq_bpm = period_s * 60)
+  unk_beats <- map_int(gaps$timestamp_begin, 
+                       ~ which.max(beats$timestamp[beats$timestamp < .x]))
+  result[unk_beats, -1] <- NA
+  result
 }
 # prepare_rdata
 # Input: ecg_deploy, beats, gaps
 # Output: 
-#content = prepare_rdata(values$ecg_deploy, values$heart_beats, values$ecg_gaps)
-prepare_rdata <- function(ecg_deploy, beats, gaps) {
-  
+prepare_rds <- function(data, beats, gaps, limits) {
+  list(data = data,
+       beats = beats, 
+       gaps = gaps,
+       limits = limits,
+       output = prepare_beats(beats, gaps))
 }
 prepare_csv <- function(beats, gaps) {
-  
+  prepare_beats(beats, gaps)
 }
