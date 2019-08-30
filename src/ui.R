@@ -28,7 +28,8 @@ fillPage(
                                    `Deploy end` = 2,
                                    `Add heart beat` = 3,
                                    `Clear heart beat` = 4,
-                                   `Clear gap` = 5)),
+                                   `Add gap` = 5,
+                                   `Clear gap` = 6)),
                  downloadButton("output_all", "Download all data (.RData)"),
                  downloadButton("output_csv", "Download heart beats (.csv)")),
     mainPanel(

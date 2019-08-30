@@ -6,7 +6,8 @@ deploy_start <- 1
 deploy_end <- 2
 add_beat <- 3
 clear_beat <- 4
-clear_gap <- 5
+add_gap <- 5
+clear_gap <- 6
 
 # Load data
 read_ube <- function(ube_path) {
@@ -175,9 +176,30 @@ plot_detail <- function(data, beats, gaps, limits, click, brush, mode) {
       
     }
   } else if (!is.null(brush)) {
-    gaps <- rbind(gaps,
-                  tibble(timestamp_begin = brush$xmin,
-                         timestamp_end = brush$xmax))
+    if (mode == add_gap) {
+      nearest_ecg <- integer(2)
+      nearest_ecg[1] <- which.min(abs(brush$xmin - as.numeric(data$timestamp)))
+      nearest_ecg[2] <- which.min(abs(brush$xmax - as.numeric(data$timestamp)))
+      gaps <- rbind(gaps,
+                    tibble(timestamp_begin = data$timestamp[nearest_ecg[1]],
+                           timestamp_end = data$timestamp[nearest_ecg[2]]))
+    }
+  }
+  
+  # Collapse overlapping gaps
+  merge_gaps <- function(.gaps, i) {
+    # Merge a gap with the one after it
+    .gaps$timestamp_end[i] <- max(.gaps$timestamp_end[c(i, i + 1)])
+    slice(.gaps, -(i + 1))
+  }
+  gaps <- arrange(gaps, timestamp_begin)
+  overlaps <- gaps$timestamp_end >= lead(gaps$timestamp_begin, 
+                                         default = last(data$timestamp + 1))
+  while (any(overlaps)) {
+    overlap <- first(which(overlaps))
+    gaps <- merge_gaps(gaps, overlap)
+    overlaps <- gaps$timestamp_end >= lead(gaps$timestamp_begin, 
+                                           default = last(data$timestamp + 1))
   }
   
   # Create plot
@@ -198,9 +220,9 @@ plot_detail <- function(data, beats, gaps, limits, click, brush, mode) {
                   ymax = gap_ymax),
               gaps_visible,
               inherit.aes = FALSE,
-              color = "blue",
-              alpha = 0.2) +
-    labs(title = sprintf("beats:%d;mode:%s", nrow(beats), mode)) +
+              fill = "blue",
+              alpha = 0.1) +
+    labs(title = sprintf("beats:%d;gaps:%d", nrow(beats), nrow(gaps))) +
     theme_classic() +
     theme(axis.title = element_blank())
   list(p, beats, gaps, limits)
